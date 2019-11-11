@@ -3,15 +3,3 @@
 // The full license text can be found in the LICENSE file.
 
 package remoteCCTV
-
-import (
-	"net"
-	"time"
-)
-
-type RemoteDevice interface {
-	// Get device uuid
-	ID() string
-	MAC() net.HardwareAddr
-	Ping(timeout ... time.Duration) pong net.
-}

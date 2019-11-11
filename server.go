@@ -13,39 +13,49 @@ import (
 
 // streamServer serves a media-stream over a net connection.
 type streamServer struct {
-	ipaddr       string
-	outputStream []io.ReadSeeker // the media stream to the (possibly) net.Conn
+	ipaddr            string
+	outputVideoStream io.ReadSeeker // the video stream to the (possibly) net.Conn
+	outputAudioStream io.ReadSeeker // the audio stream to (possibly) net.Conn
 
 	// inuse will be false only when there are no active connections.
 	inuse bool
 }
 
-func newStreamServer(addr string, initialStream ...MediaStream) *streamServer {
-	if len(initialStream) <= 0 {
-		return &streamServer{
-			ipaddr: addr,
-			inuse:  false,
+func newStreamServer(addr string, initialStreams ...MediaStream) *streamServer {
+	var s = &streamServer{
+		ipaddr: addr,
+		inuse:  false,
+	}
+
+	if len(initialStreams) <= 0 {
+		for _, stream := range initialStreams {
+			switch stream.Type() {
+			case VideoStream:
+				s.outputVideoStream = stream
+			case AudioStream:
+				s.outputAudioStream = stream
+
+			}
 		}
 	}
-	return &streamServer{
-		ipaddr:       addr,
-		inuse:        true,
-		outputStream: initialStream,
-	}
+	return s
 
 }
 func (ss *streamServer) Read(p []byte) (n int, err error) {
-	if ss.outputStream != nil {
-
+	if ss.outputVideoStream != nil {
+		return ss.outputVideoStream.Read(p)
 	}
 }
 
 func (ss *streamServer) Close() error {
 	if !ss.inuse {
 
-		ss.outputStream = nil
+		ss.outputVideoStream = nil
+		ss.outputAudioStream = nil
 		return nil
 	}
+	return errors.New("can't close streamServer with active connections, try again later of use ForceClose to kill the connections and force the server to close.")
+
 }
 
 type StreamType int
@@ -119,6 +129,14 @@ type Server struct {
 	streams []MediaStream
 }
 
+func NewServer(addr string) *Server {
+	return &Server{
+		 Server: &http.Server{
+			Addr: addr,
+		}
+
+	}
+}
 func (s *Server) Streams() ([]MediaStream, error) {
 	if len(s.streams) < 1 {
 		return nil, errors.New("No Streams Available")

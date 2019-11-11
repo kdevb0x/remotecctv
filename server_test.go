@@ -3,3 +3,13 @@
 // The full license text can be found in the LICENSE file.
 
 package remoteCCTV
+
+import (
+	"testing"
+
+	nt "golang.org/x/net/nettest"
+)
+
+func TestMediaStream(t *testing.T) {
+	println(nt.SupportsIPv4())
+}

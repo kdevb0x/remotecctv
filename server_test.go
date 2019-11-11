@@ -6,10 +6,8 @@ package remoteCCTV
 
 import (
 	"testing"
-
-	nt "golang.org/x/net/nettest"
 )
 
 func TestMediaStream(t *testing.T) {
-	println(nt.SupportsIPv4())
+	s := NewServer(":8080")
 }

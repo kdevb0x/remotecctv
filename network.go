@@ -11,7 +11,7 @@ import (
 
 type RemoteDevice interface {
 	// Get device uuid
-	ID() string
+	Uuid() string // device uuid
 	MAC() net.HardwareAddr
-	Ping(timeout ... time.Duration) pong net.
+	Ping(timeout ...time.Duration)
 }

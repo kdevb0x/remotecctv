@@ -16,7 +16,7 @@ var (
 	_ cctv.StreamVideo
 )
 
-func InitDevice(devpath string) (MediaStream, error) {
+func InitDevice(devpath string) (cctv.MediaStream, error) {
 	cam, err := webcam.Open(devpath)
 	if err != nil {
 		return nil, err

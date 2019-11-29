@@ -1,4 +1,4 @@
-module remoteCCTV
+module github.com/kdevb0x/remotecctv
 
 go 1.13
 

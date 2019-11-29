@@ -136,6 +136,7 @@ type MediaStream interface {
 	Type() StreamType
 }
 
+// Server is an http server that also serves streaming media such as video.
 type Server struct {
 	// embeds an http.Server for the incomming network connection.
 	*http.Server
@@ -153,6 +154,7 @@ func NewServer(addr string) *Server {
 	}
 }
 
+// Streams return a slice containing all of the available MediaStreams.
 func (s *Server) Streams() ([]MediaStream, error) {
 	if len(s.streams) < 1 {
 		return nil, errors.New("No Streams Available")
@@ -190,10 +192,12 @@ func LoginPage(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// hashPasswordBcrypt hashes password using the bcrypt hashing algorithm.
 func hashPasswordBcrypt(password []byte) (hash []byte, err error) {
 	return bcrypt.GenerateFromPassword(password, 14)
 }
 
+// Argon2Parameters holds the setttings for using Argon2.
 type Argon2Parameters struct {
 	Memory      uint32
 	Iterations  uint32
@@ -204,6 +208,8 @@ type Argon2Parameters struct {
 	KeyLen uint32
 }
 
+// hashPasswordArgon2 hashes password using argon2 and optional parameters p.
+// It uses the recommended defaults if p is not provided.
 func hashPasswordArgon2(password []byte, p ...Argon2Parameters) (hash []byte, err error) {
 	var params Argon2Parameters
 	if len(p) == 0 {
@@ -232,6 +238,8 @@ func hashPasswordArgon2(password []byte, p ...Argon2Parameters) (hash []byte, er
 	return hash, nil
 }
 
+// CompareHashArgon compares hash to the argon2 hash of password.
+// It returns a non-nil error if they DO NOT match, and nil err if they do.
 func CompareHashArgon(password []byte, hash []byte) error {
 	if phash, err := hashPasswordArgon2(password); err != nil {
 		if bytes.Equal(phash, hash) {

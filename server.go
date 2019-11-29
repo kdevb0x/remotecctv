@@ -5,10 +5,17 @@
 package remoteCCTV
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"errors"
+	"html/template"
 	"io"
 	"net/http"
+	"os"
+
+	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // streamServer serves a media-stream over a net connection.
@@ -45,6 +52,7 @@ func (ss *streamServer) Read(p []byte) (n int, err error) {
 	if ss.outputVideoStream != nil {
 		return ss.outputVideoStream.Read(p)
 	}
+	return 0, errors.New("outputVideoStream not available for reading")
 }
 
 func (ss *streamServer) Close() error {
@@ -70,7 +78,12 @@ func (st *StreamType) Read(p []byte) (n int, err error) {
 	case *st == AudioStream:
 		return st.streamAudio(p)
 	case *st == VideoStream:
-		return st.StreamVideo(p)
+		n, _, err = st.StreamVideo(p)
+		if err != nil {
+			return 0, err
+		}
+		return n, err
+
 	}
 	return 0, errors.New("unrecognized StreamType")
 
@@ -95,9 +108,10 @@ func (st *StreamType) Type() StreamType {
 
 func (st *StreamType) streamAudio(p []byte) (n int, err error) {
 	// TODO: This is where the audio streaming api begins
+	return 0, nil // TODO: change this
 }
 
-func (st *StreamType) StreamVideo(p []byte) (n int, err error) {
+func (st *StreamType) StreamVideo(p []byte) (n int, stopFunc func(), err error) {
 	ctx, stopStream := context.WithCancel(context.Background())
 	schan := make(chan []byte)
 	var plen = len(p)
@@ -105,13 +119,13 @@ func (st *StreamType) StreamVideo(p []byte) (n int, err error) {
 	for buf := range schan {
 		n += copy(p[:plen], buf[:plen])
 	}
-	return n, nil
+	return n, stopStream, nil
 
 }
 func (st *StreamType) streamVideo(ctx context.Context, p chan []byte) error {
 	// NOTE: This is where the video streaming api begins.
 	// TODO: Implement it.
-
+	return nil
 }
 
 // MediaStream is a ReadSeekCloser with a the addition of a `Type() StreamType` method.
@@ -131,15 +145,98 @@ type Server struct {
 
 func NewServer(addr string) *Server {
 	return &Server{
-		 Server: &http.Server{
+		Server: &http.Server{
 			Addr: addr,
-		}
+		},
 
+		streams: make([]MediaStream, 2, 4),
 	}
 }
+
 func (s *Server) Streams() ([]MediaStream, error) {
 	if len(s.streams) < 1 {
 		return nil, errors.New("No Streams Available")
 	}
 	return s.streams, nil
+}
+
+func LoginPage(w http.ResponseWriter, r *http.Request) {
+	// TODO: Maybe refactor this into a template
+
+	tmpl, err := template.New("login").ParseFiles("login.html")
+	if err != nil {
+		http.Error(w, "failed to parse template:"+err.Error(), http.StatusInternalServerError)
+	}
+
+	switch r.Method {
+	case "GET":
+		tmpl.Execute(w, nil)
+	case "POST":
+		r.ParseForm()
+		if ps, ok := r.Form["password"]; ok {
+			hashedPassBC := os.Getenv("PASS_HASH_BC")
+			hashedPassAR := os.Getenv("PASS_HASH_AR")
+			if err := CompareHashArgon([]byte(ps[0]), []byte(hashedPassAR)); err != nil {
+				// redirect and start stream
+				http.Redirect(w, r, "/liveStream", http.StatusFound)
+			}
+			err := bcrypt.CompareHashAndPassword([]byte(hashedPassBC), []byte(ps[0]))
+			if err != nil {
+				http.Error(w, "invalid password", http.StatusUnauthorized)
+			}
+		}
+
+	}
+
+}
+
+func newLoginPasswordBcrypt(password []byte) (hash []byte, err error) {
+	return bcrypt.GenerateFromPassword(password, 14)
+}
+
+type Argon2Parameters struct {
+	Memory      uint32
+	Iterations  uint32
+	Parallelism uint8
+	// recomended salt length of at least 16 bytes.
+	SaltLen uint32
+	// recomended key length of at leasr 32 bytes
+	KeyLen uint32
+}
+
+func argon2Hash(password []byte, p ...Argon2Parameters) (hash []byte, err error) {
+	var params Argon2Parameters
+	if len(p) == 0 {
+		params = Argon2Parameters{
+			Memory:      64 * 1024,
+			Iterations:  3,
+			Parallelism: 2,
+			SaltLen:     16,
+			KeyLen:      32,
+		}
+	} else {
+		params = p[0]
+	}
+
+	s := make([]byte, params.SaltLen)
+	_, err = io.ReadFull(rand.Reader, s)
+	if err != nil {
+		return nil, err
+	}
+	hash = argon2.IDKey(password, s, params.Iterations, params.Memory, params.Parallelism, params.KeyLen)
+
+	// set env var until better solution is decided (trying to avoid a db)
+	if err := os.Setenv("PASS_HASH_AR", string(hash)); err != nil {
+		return nil, err
+	}
+	return hash, nil
+}
+
+func CompareHashArgon(password []byte, hash []byte) error {
+	if phash, err := argon2Hash(password); err != nil {
+		if bytes.Equal(phash, hash) {
+			return nil
+		}
+	}
+	return errors.New("password hashes do not match")
 }

@@ -1,0 +1,29 @@
+<html>
+<head>
+<title> Login </title>
+</head>
+<body>
+<br>
+<div title="loginInput">
+<h4> Please enter password for access: </h4>
+<br>
+<form action="/login" method="post">
+<label for="pass">Password (8 characters minimum): </label>
+<input type="password" id="pass" name="password" minlength="8" required></div>
+<input type="submit" value="Submit">
+</form>
+</body>
+</html>
+
+<style type="text/css">
+
+label {
+    display: block;
+    font: .9rem 'Fira Sans', sans-serif;
+}
+
+input[type='submit'],
+label {
+    margin-top: 1rem;
+}
+</style>

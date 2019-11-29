@@ -2,13 +2,13 @@
 // Use of this source code is governed by the BSD 3-Clause license
 // The full license text can be found in the LICENSE file.
 
-package main
+package camsock
 
 import (
 	"io"
 
 	"github.com/blackjack/webcam"
-	cctv "github.com/kdevb0x/remoteCCTV"
+	cctv "github.com/kdevb0x/remotecctv"
 )
 
 var (

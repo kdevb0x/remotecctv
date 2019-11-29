@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802 // indirect
-	github.com/blackjack/webcam v0.0.0-20191123110216-08fa32efcb67 // indirect
+	github.com/blackjack/webcam v0.0.0-20191123110216-08fa32efcb67
 	github.com/gen2brain/shm v0.0.0-20191025110947-b09d223a76f1 // indirect
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/kbinani/screenshot v0.0.0-20190719135742-f06580e30cdc // indirect

@@ -1,4 +1,4 @@
-##**remoteCCTV**
+**remotecctv**
 
 This program is a distributed video streamer and viewer for multiple feeds that connect using abstract RF protcols such as LoRa, Long Range WiFi, etc.
 The connection must only implement the RemoteConnection interface.

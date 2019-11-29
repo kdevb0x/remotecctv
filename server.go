@@ -190,7 +190,7 @@ func LoginPage(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func newLoginPasswordBcrypt(password []byte) (hash []byte, err error) {
+func hashPasswordBcrypt(password []byte) (hash []byte, err error) {
 	return bcrypt.GenerateFromPassword(password, 14)
 }
 
@@ -204,7 +204,7 @@ type Argon2Parameters struct {
 	KeyLen uint32
 }
 
-func argon2Hash(password []byte, p ...Argon2Parameters) (hash []byte, err error) {
+func hashPasswordArgon2(password []byte, p ...Argon2Parameters) (hash []byte, err error) {
 	var params Argon2Parameters
 	if len(p) == 0 {
 		params = Argon2Parameters{
@@ -233,7 +233,7 @@ func argon2Hash(password []byte, p ...Argon2Parameters) (hash []byte, err error)
 }
 
 func CompareHashArgon(password []byte, hash []byte) error {
-	if phash, err := argon2Hash(password); err != nil {
+	if phash, err := hashPasswordArgon2(password); err != nil {
 		if bytes.Equal(phash, hash) {
 			return nil
 		}

@@ -22,7 +22,7 @@ func NewSocketListener(sockfilepath string, killchan chan struct{}) (chan net.Co
 		home = "/tmp"
 	}
 	if sockfilepath == "" {
-		sockfilepath = home + "camsock.sock"
+		sockfilepath = home + "/" + "camsock.sock"
 	}
 
 	sockfile, err := os.Create(sockfilepath)
@@ -30,7 +30,7 @@ func NewSocketListener(sockfilepath string, killchan chan struct{}) (chan net.Co
 		return nil, err
 	}
 
-	l, err := net.Listen("unixgram", sockfilepath+sockfile.Name())
+	l, err := net.Listen("unixgram", sockfile.Name())
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +51,8 @@ func NewSocketListener(sockfilepath string, killchan chan struct{}) (chan net.Co
 
 						<-cons
 					}
+					sockfile.Close()
+					defer os.Remove(sockfilepath)
 				}
 				return
 			case cons <- sockconn:

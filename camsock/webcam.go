@@ -6,20 +6,13 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net"
 
 	"github.com/blackjack/webcam"
-	cctv "github.com/kdevb0x/remotecctv"
 )
 
-const DefaultSockPath = "/tmp/camsock.sock"
-
-var (
-	_ io.WriteCloser
-	_ cctv.StreamVideo
-)
+const DefaultSockPath = "/home/k/camsock.sock"
 
 func InitCameraDevice(devpath string) (*webcam.Webcam, error) {
 	return webcam.Open(devpath)
@@ -30,11 +23,12 @@ func streamToSocketConn(cam *webcam.Webcam, socketpath string) error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 	formats := cam.GetSupportedFormats()
 	for k, v := range formats {
 		fmt.Printf("format: %v, notes: %s\n", k, v)
 	}
-
+	return nil
 }
 
 func main() {

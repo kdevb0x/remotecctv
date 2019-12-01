@@ -17,6 +17,6 @@ func newMocStream() mocStream {
 }
 
 func TestMediaStream(t *testing.T) {
-	s := NewServer(":8080")
+	// s := NewServer(":8080")
 
 }

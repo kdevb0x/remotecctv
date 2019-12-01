@@ -74,6 +74,7 @@ func (ss *streamServer) ForceClose() {
 	return
 }
 
+// StreamType denotes the type of the media stream.
 type StreamType int
 
 const (
@@ -114,7 +115,11 @@ func (st *StreamType) Type() StreamType {
 	return *st
 }
 
-func (st *StreamType) streamAudio(p []byte) (n int, err error) {
+type Streamer interface {
+	Stream(p chan []byte) (stopFunc func(), err error)
+}
+
+func (st *StreamType) streamAudio(ctx context.Context, p chan []byte) (n int, err error) {
 	// TODO: This is where the audio streaming api begins
 	return 0, nil // TODO: change this
 }

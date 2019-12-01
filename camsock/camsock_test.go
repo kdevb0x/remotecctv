@@ -9,9 +9,24 @@
 package main
 
 import (
+	"net"
 	"testing"
 )
 
-func TestCreatSocketConn(t *testing.T) {
-	conn, err := CreatSocketConn(ctx context.Context, port string, sockfilepath string)
+func TestNewSocketListener(t *testing.T) {
+	kc := make(chan struct{}, 1)
+	conns, err := NewSocketListener("", kc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var conn net.Conn
+	var ok bool
+	conn, ok = <-conns
+	if !ok {
+		t.Fail()
+	}
+	defer func() {
+		kc <- struct{}{}
+		conn.Close()
+	}()
 }

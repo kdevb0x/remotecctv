@@ -7,42 +7,56 @@ package main
 import (
 	"net"
 	"os"
-	"syscall"
-
-	"golang.org/x/sys/unix"
 )
 
-func NewSocketConn(sockfilepath string) (net.Conn, error) {
+// NewSocketListener creates a sockfile at sockfilepath and listens for
+// incomming connections inside another goroutine, and passes them down the
+// returned channel.
+//
+// NOTE: The channel is unbuffered; it will block until read from.
+func NewSocketListener(sockfilepath string, killchan chan struct{}) (chan net.Conn, error) {
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		println("cant resolve $HOME; using /tmp/ for socketpath")
+		println("cant resolve $HOME; using /tmp for socketpath")
 		home = "/tmp"
 	}
 	if sockfilepath == "" {
 		sockfilepath = home + "camsock.sock"
 	}
 
-	fd, err := unix.Creat(sockfilepath, uint32(os.ModeSocket))
+	sockfile, err := os.Create(sockfilepath)
 	if err != nil {
 		return nil, err
 	}
-	sfile := os.NewFile(uintptr(fd), sockfilepath)
-	defer sfile.Close()
-
-	sockfd, err := unix.Socket(syscall.AF_UNIX, syscall.SOCK_DGRAM, 0)
-	sockfile := os.NewFile(uintptr(sockfd), sockfilepath)
 
 	l, err := net.Listen("unixgram", sockfilepath+sockfile.Name())
 	if err != nil {
 		return nil, err
 	}
-	for {
-		sockconn, err := l.Accept()
-		if err != nil {
-			return nil, err
-		}
-		return sockconn, nil
-	}
+	cons := make(chan net.Conn)
 
+	go func() {
+		for {
+			sockconn, err := l.Accept()
+			if err != nil {
+				println(err.Error())
+				continue
+			}
+			select {
+			case <-killchan:
+				close(cons)
+				if len(cons) > 0 {
+					for i := 0; i < len(cons); i++ {
+
+						<-cons
+					}
+				}
+				return
+			case cons <- sockconn:
+				continue
+			}
+		}
+	}()
+	return cons, nil
 }

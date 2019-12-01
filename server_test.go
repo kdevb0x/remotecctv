@@ -5,9 +5,18 @@
 package remotecctv
 
 import (
+	"image"
 	"testing"
 )
 
+type mocStream chan image.Image
+
+func newMocStream() mocStream {
+	s := make(chan image.Image)
+	return s
+}
+
 func TestMediaStream(t *testing.T) {
 	s := NewServer(":8080")
+
 }

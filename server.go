@@ -16,6 +16,8 @@ import (
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/gorilla/mux"
 )
 
 // streamServer serves a media-stream over a net connection.
@@ -62,8 +64,14 @@ func (ss *streamServer) Close() error {
 		ss.outputAudioStream = nil
 		return nil
 	}
-	return errors.New("can't close streamServer with active connections, try again later of use ForceClose to kill the connections and force the server to close.")
+	return errors.New("can't close streamServer with active connections, try again later or use ForceClose to kill the connections and force the server to close.")
 
+}
+
+func (ss *streamServer) ForceClose() {
+	ss.outputAudioStream = nil
+	ss.outputVideoStream = nil
+	return
 }
 
 type StreamType int
@@ -141,16 +149,19 @@ type Server struct {
 	// embeds an http.Server for the incomming network connection.
 	*http.Server
 
-	streams []MediaStream
+	streams      []MediaStream
+	streamServer *streamServer
 }
 
 func NewServer(addr string) *Server {
 	return &Server{
 		Server: &http.Server{
-			Addr: addr,
+			Addr:    addr,
+			Handler: mux.NewRouter(),
 		},
 
-		streams: make([]MediaStream, 2, 4),
+		streams:      make([]MediaStream, 2, 4),
+		streamServer: newStreamServer(addr),
 	}
 }
 
